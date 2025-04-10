@@ -1,0 +1,15 @@
+{
+  "name": "galeguia-supabase",
+  "version": "1.0.0",
+  "description": "Educational platform built with Supabase",
+  "scripts": {
+    "start": "http-server",
+    "deploy": "cp -r web-admin/* public/"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.8"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

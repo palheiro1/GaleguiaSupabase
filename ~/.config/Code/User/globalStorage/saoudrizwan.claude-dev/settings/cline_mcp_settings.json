@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "github.com/alexander-zuev/supabase-mcp-server": {
+      "command": "supabase-mcp-server",
+      "args": [],
+      "env": {
+        "SUPABASE_URL": "https://xiujciwvqzryorlsdoyx.supabase.co",
+        "SUPABASE_SERVICE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdWpjaXd2cXpyeW9ybHNkb3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDI5NTMxNCwiZXhwIjoyMDU5ODcxMzE0fQ.FRT-zHK7cL8I738UNbMqu2XZwZG7lZJNmohMKfQqQpM",
+        "SUPABASE_PROJECT_ID": "xiujciwvqzryorlsdoyx"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
