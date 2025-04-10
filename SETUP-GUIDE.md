@@ -47,11 +47,15 @@ node setup-database.js
 
 ### Accessing the Public Web Admin Interface
 
-The web admin interface is already deployed and publicly accessible at:
+The web admin interface is now deployed and publicly accessible at:
 
 ```
-https://yourgithubusername.github.io/GaleguiaSupabase/
+https://palheiro1.github.io/GaleguiaSupabase/docs/
 ```
+
+You can access the GitHub repository at: [https://github.com/palheiro1/GaleguiaSupabase](https://github.com/palheiro1/GaleguiaSupabase)
+
+Note: GitHub Pages deployment may take a few minutes after the initial push. You can check the deployment status in the repository settings under 'Pages'.
 
 This interface connects to your Supabase project with the credentials configured in `web-admin/js/config.js`.
 
