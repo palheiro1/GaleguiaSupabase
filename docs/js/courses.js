@@ -52,54 +52,85 @@ function initModals() {
 // Load all courses created by the user
 async function loadUserCourses() {
   try {
-    // Check if current user has admin privileges
-    const { data: userProfile, error: profileError } = await supabase
+    // First, check if the user profile exists and get admin status
+    const userID = currentUser.id;
+    console.log("Current user ID:", userID);
+    
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
-      .eq('id', currentUser.id)
-      .single();
+      .eq('id', userID)
+      .maybeSingle();
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+      // If we can't get the profile, just assume the user is not an admin
+      isAdmin = false;
+    } else {
+      isAdmin = profile?.is_admin === true;
+    }
     
-    isAdmin = userProfile?.is_admin || false;
+    console.log("User is admin:", isAdmin);
     
-    console.log("User is admin:", isAdmin); // Debug output
+    // Now we'll use a simpler approach to get courses
+    let coursesQuery;
     
-    // Use a simpler query first to test if it works
-    let { data: courses, error } = await supabase
+    // For both admins and regular users, just get courses they have access to
+    // The RLS policies will handle the filtering
+    coursesQuery = await supabase
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
     
+    const { data: courses, error } = coursesQuery;
+    
     if (error) throw error;
     
-    // Filter courses if not admin
-    if (!isAdmin) {
-      courses = courses.filter(course => course.created_by === currentUser.id);
+    // Get module counts for each course
+    const courseIds = courses.map(c => c.id);
+    
+    if (courseIds.length > 0) {
+      const { data: modules } = await supabase
+        .from('modules')
+        .select('course_id, id')
+        .in('course_id', courseIds);
+      
+      // Count modules per course
+      const moduleCounts = {};
+      modules?.forEach(module => {
+        moduleCounts[module.course_id] = (moduleCounts[module.course_id] || 0) + 1;
+      });
+      
+      // Add module counts to each course
+      courses.forEach(course => {
+        course.modules = [{ count: moduleCounts[course.id] || 0 }];
+      });
+      
+      // For admin users, also get the creator information
+      if (isAdmin) {
+        const creatorIds = [...new Set(courses.map(c => c.created_by))];
+        
+        if (creatorIds.length > 0) {
+          const { data: creators } = await supabase
+            .from('profiles')
+            .select('id, username, full_name')
+            .in('id', creatorIds);
+          
+          const creatorMap = {};
+          creators?.forEach(creator => {
+            creatorMap[creator.id] = creator;
+          });
+          
+          courses.forEach(course => {
+            course.creator = creatorMap[course.created_by];
+          });
+        }
+      }
     }
     
-    // Then get module counts separately
-    const { data: modulesCounts, error: modulesError } = await supabase
-      .from('modules')
-      .select('course_id')
-      .eq('course_id', courses.map(c => c.id));
-      
-    if (modulesError) throw modulesError;
-    
-    // Count modules per course
-    const moduleCountByCourse = {};
-    modulesCounts.forEach(m => {
-      moduleCountByCourse[m.course_id] = (moduleCountByCourse[m.course_id] || 0) + 1;
-    });
-    
-    // Add module counts to courses
-    courses.forEach(course => {
-      course.moduleCount = moduleCountByCourse[course.id] || 0;
-      course.modules = [{ count: moduleCountByCourse[course.id] || 0 }];
-    });
-    
-    userCourses = courses;
+    userCourses = courses || [];
     renderCoursesList();
+    
   } catch (error) {
     console.error('Error loading courses:', error.message);
     showErrorAlert('Error loading courses: ' + error.message);
@@ -293,7 +324,7 @@ async function saveCourse(e) {
       result = data;
       
     } else {
-      // Create new course
+      // Create new course - explicitly set created_by
       courseData.created_by = currentUser.id;
       
       const { data, error } = await supabase

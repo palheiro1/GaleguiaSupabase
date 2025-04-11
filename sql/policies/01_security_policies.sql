@@ -14,10 +14,12 @@ DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON profiles
 DROP POLICY IF EXISTS "Users can update their own profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their own profiles" ON profiles;
 DROP POLICY IF EXISTS "Published courses are viewable by authenticated users" ON courses;
-DROP POLICY IF EXISTS "Published courses are viewable by authenticated users or admin" ON courses;
+DROP POLICY IF EXISTS "Admin users can view all courses" ON courses;
 DROP POLICY IF EXISTS "Course creators can update their own courses" ON courses;
 DROP POLICY IF EXISTS "Authenticated users can create courses" ON courses;
 DROP POLICY IF EXISTS "Course creators can delete their own courses" ON courses;
+DROP POLICY IF EXISTS "Admins can update any course" ON courses;
+DROP POLICY IF EXISTS "Admins can delete any course" ON courses;
 DROP POLICY IF EXISTS "Modules are viewable if their course is viewable" ON modules;
 DROP POLICY IF EXISTS "Course creators can manage their modules" ON modules;
 DROP POLICY IF EXISTS "Lessons are viewable if their module is viewable" ON lessons;
@@ -50,10 +52,7 @@ TO authenticated
 WITH CHECK (auth.uid() = id);
 
 -- Courses Policies
--- Drop the problematic policy
-DROP POLICY IF EXISTS "Published courses are viewable by authenticated users or admin" ON courses;
-
--- Replace with a simpler policy that doesn't try to access auth.users
+-- Courses are viewable if published or if user is creator
 CREATE POLICY "Published courses are viewable by authenticated users"
 ON courses FOR SELECT
 TO authenticated
@@ -62,7 +61,7 @@ USING (
   OR auth.uid() = created_by
 );
 
--- Add a new policy for admin users that must be updated by a database function
+-- Admin policy for viewing all courses 
 CREATE POLICY "Admin users can view all courses"
 ON courses FOR SELECT
 TO authenticated
@@ -74,45 +73,43 @@ USING (
   )
 );
 
--- Course creators can update their own courses
-CREATE POLICY "Course creators can update their own courses"
+-- Course creation policy - both admins and regular users can create courses
+CREATE POLICY "Users can create courses" 
+ON courses FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
+
+-- Course update policies - for creators and admins
+CREATE POLICY "Course creators can update own courses"
 ON courses FOR UPDATE
 TO authenticated
 USING (auth.uid() = created_by)
 WITH CHECK (auth.uid() = created_by);
 
--- Authenticated users can create courses
-CREATE POLICY "Authenticated users can create courses"
-ON courses FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
-
--- Course creators can delete their own courses
-CREATE POLICY "Course creators can delete their own courses"
-ON courses FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
-
--- Add a new policy allowing admins to update any course
-CREATE POLICY "Admins can update any course"
+CREATE POLICY "Admins can update any course" 
 ON courses FOR UPDATE
 TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
+    WHERE profiles.id = auth.uid() 
     AND profiles.is_admin = true
   )
 )
 WITH CHECK (
   EXISTS (
-    SELECT 1 FROM profiles
+    SELECT 1 FROM profiles 
     WHERE profiles.id = auth.uid()
     AND profiles.is_admin = true
   )
 );
 
--- Add a new policy allowing admins to delete any course
+-- Course deletion policies - for creators and admins
+CREATE POLICY "Course creators can delete own courses"
+ON courses FOR DELETE
+TO authenticated
+USING (auth.uid() = created_by);
+
 CREATE POLICY "Admins can delete any course"
 ON courses FOR DELETE
 TO authenticated
