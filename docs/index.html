@@ -48,7 +48,7 @@
             <a class="nav-link" href="#login">Login</a>
           </li>
           <li class="nav-item hidden" id="nav-courses">
-            <a class="nav-link" href="#courses">My Courses</a>
+            <a class="nav-link" href="#courses">Os Meus Cursos</a>
           </li>
           <li class="nav-item hidden" id="nav-logout">
             <a class="nav-link" href="#" id="logout-btn">Logout</a>
@@ -75,11 +75,11 @@
                 <input type="email" class="form-control" id="login-email" required>
               </div>
               <div class="mb-3">
-                <label for="login-password" class="form-label">Password</label>
+                <label for="login-password" class="form-label">Senha</label>
                 <input type="password" class="form-control" id="login-password" required>
               </div>
               <button type="submit" class="btn btn-primary">Login</button>
-              <button type="button" class="btn btn-link" id="show-signup">Need an account?</button>
+              <button type="button" class="btn btn-link" id="show-signup">Precisas umha conta?</button>
             </form>
           </div>
         </div>
@@ -87,7 +87,7 @@
         <!-- Signup form -->
         <div id="signup-form" class="card hidden">
           <div class="card-header">
-            <h3>Create Account</h3>
+            <h3>Criar Conta</h3>
           </div>
           <div class="card-body">
             <div class="alert alert-danger hidden" id="signup-error"></div>
@@ -97,15 +97,15 @@
                 <input type="email" class="form-control" id="signup-email" required>
               </div>
               <div class="mb-3">
-                <label for="signup-password" class="form-label">Password</label>
+                <label for="signup-password" class="form-label">Senha</label>
                 <input type="password" class="form-control" id="signup-password" required minlength="6">
               </div>
               <div class="mb-3">
-                <label for="signup-fullname" class="form-label">Full Name</label>
+                <label for="signup-fullname" class="form-label">Nome Completo</label>
                 <input type="text" class="form-control" id="signup-fullname" required>
               </div>
-              <button type="submit" class="btn btn-success">Create Account</button>
-              <button type="button" class="btn btn-link" id="show-login">Already have an account?</button>
+              <button type="submit" class="btn btn-success">Criar Conta</button>
+              <button type="button" class="btn btn-link" id="show-login">Já tés conta?</button>
             </form>
           </div>
         </div>
@@ -118,11 +118,11 @@
     <!-- Course list screen -->
     <div id="courses-screen">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>My Courses</h2>
-        <button class="btn btn-success" id="new-course-btn">Create New Course</button>
+        <h2>Os Meus Cursos</h2>
+        <button class="btn btn-success" id="new-course-btn">Criar Novo Curso</button>
       </div>
       <div class="alert alert-info" id="no-courses-message">
-        You don't have any courses yet. Click "Create New Course" to get started.
+        Ainda nom tés nengum curso. Clica em "Criar Novo Curso" para começar.
       </div>
       <div class="row" id="courses-list">
         <!-- Course cards will go here -->
@@ -131,16 +131,16 @@
 
     <!-- Course editor screen -->
     <div id="course-editor-screen" class="hidden">
-      <button class="btn btn-outline-secondary mb-3" id="back-to-courses-btn">Back to Courses</button>
+      <button class="btn btn-outline-secondary mb-3" id="back-to-courses-btn">Voltar a Cursos</button>
       
-      <h2 id="course-editor-title">Create New Course</h2>
+      <h2 id="course-editor-title">Criar Novo Curso</h2>
       
       <ul class="nav nav-tabs mb-4" id="course-editor-tabs">
         <li class="nav-item">
-          <a class="nav-link active" data-bs-toggle="tab" href="#details-tab">Course Details</a>
+          <a class="nav-link active" data-bs-toggle="tab" href="#details-tab">Detalhes de Curso</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#modules-tab">Modules & Lessons</a>
+          <a class="nav-link" data-bs-toggle="tab" href="#modules-tab">Unidades e Liçons</a>
         </li>
       </ul>
       
@@ -150,15 +150,15 @@
           <form id="course-details-form">
             <input type="hidden" id="edit-course-id">
             <div class="mb-3">
-              <label for="course-title" class="form-label">Course Title</label>
+              <label for="course-title" class="form-label">Título do Curso</label>
               <input type="text" class="form-control" id="course-title" required>
             </div>
             <div class="mb-3">
-              <label for="course-description" class="form-label">Description</label>
+              <label for="course-description" class="form-label">Descriçom</label>
               <textarea class="form-control" id="course-description" rows="4" required></textarea>
             </div>
             <div class="mb-3">
-              <label for="course-cover-image" class="form-label">Cover Image</label>
+              <label for="course-cover-image" class="form-label">Imagem de Capa</label>
               <input type="file" class="form-control" id="course-cover-image" accept="image/*">
               <div id="cover-image-preview" class="mt-2 hidden">
                 <img src="" alt="Cover preview" id="cover-preview-img" style="max-width: 100%; max-height: 200px;">
@@ -166,11 +166,11 @@
             </div>
             <div class="form-check mb-3">
               <input type="checkbox" class="form-check-input" id="course-is-published">
-              <label class="form-check-label" for="course-is-published">Publish course (make visible to users)</label>
+              <label class="form-check-label" for="course-is-published">Publicar Curso (torná-lo visível para os usuários)</label>
             </div>
             <div class="d-flex justify-content-between">
-              <button type="submit" class="btn btn-primary" id="save-course-btn">Save Course</button>
-              <button type="button" class="btn btn-danger hidden" id="delete-course-btn">Delete Course</button>
+              <button type="submit" class="btn btn-primary" id="save-course-btn">Guardar Curso</button>
+              <button type="button" class="btn btn-danger hidden" id="delete-course-btn">Apagar Curso</button>
             </div>
           </form>
         </div>
@@ -178,7 +178,7 @@
         <!-- Modules tab -->
         <div class="tab-pane fade" id="modules-tab">
           <div class="alert alert-info" id="no-modules-message">
-            This course doesn't have any modules yet. Add your first module below.
+            Este Curso ainda nom tem nengumha Unidade. Cria a primeira aqui.
           </div>
           
           <div id="modules-container">
@@ -186,7 +186,7 @@
           </div>
           
           <button type="button" class="btn btn-primary mt-3" id="add-module-btn">
-            Add New Module
+            Adiciona Nova Unidade
           </button>
           
           <!-- Module Editor Modal -->
@@ -194,25 +194,25 @@
             <div class="modal-dialog">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="module-modal-title">Add Module</h5>
+                  <h5 class="modal-title" id="module-modal-title">Adiciona Unidade</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                   <form id="module-form">
                     <input type="hidden" id="edit-module-id">
                     <div class="mb-3">
-                      <label for="module-title" class="form-label">Module Title</label>
+                      <label for="module-title" class="form-label">Título da Unidade</label>
                       <input type="text" class="form-control" id="module-title" required>
                     </div>
                     <div class="mb-3">
-                      <label for="module-description" class="form-label">Description</label>
+                      <label for="module-description" class="form-label">Descriçom</label>
                       <textarea class="form-control" id="module-description" rows="3"></textarea>
                     </div>
                   </form>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-primary" id="save-module-btn">Save Module</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="save-module-btn">Guardar Unidade</button>
                 </div>
               </div>
             </div>
@@ -223,7 +223,7 @@
             <div class="modal-dialog modal-lg">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="lesson-modal-title">Add Lesson</h5>
+                  <h5 class="modal-title" id="lesson-modal-title">Adicionar Liçom</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -231,23 +231,23 @@
                     <input type="hidden" id="edit-lesson-id">
                     <input type="hidden" id="lesson-module-id">
                     <div class="mb-3">
-                      <label for="lesson-title" class="form-label">Lesson Title</label>
+                      <label for="lesson-title" class="form-label">Título de Liçom</label>
                       <input type="text" class="form-control" id="lesson-title" required>
                     </div>
                     <div class="mb-3">
-                      <label for="lesson-type" class="form-label">Lesson Type</label>
+                      <label for="lesson-type" class="form-label">Tipo de Liçom</label>
                       <select class="form-select" id="lesson-type" required>
-                        <option value="text">Text</option>
+                        <option value="text">Texto</option>
                         <option value="video">Video</option>
                         <option value="quiz">Quiz</option>
                       </select>
                     </div>
                     <div class="mb-3" id="lesson-content-container">
-                      <label for="lesson-content" class="form-label">Content</label>
+                      <label for="lesson-content" class="form-label">Conteúdo</label>
                       <textarea class="form-control" id="lesson-content" rows="8"></textarea>
                     </div>
                     <div class="mb-3 hidden" id="lesson-video-container">
-                      <label for="lesson-video" class="form-label">Video File</label>
+                      <label for="lesson-video" class="form-label">Arquivo de Vídeo</label>
                       <input type="file" class="form-control" id="lesson-video" accept="video/*">
                       <div id="video-preview" class="mt-2 hidden">
                         <video controls style="max-width: 100%; max-height: 200px;" id="video-preview-player"></video>
@@ -256,8 +256,8 @@
                   </form>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-primary" id="save-lesson-btn">Save Lesson</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="save-lesson-btn">Guardar Liçom</button>
                 </div>
               </div>
             </div>
