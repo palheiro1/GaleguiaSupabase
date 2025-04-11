@@ -26,6 +26,7 @@ let currentModuleId = null;
 let currentLessonId = null;
 let userCourses = [];
 let currentCourseModules = [];
+let isAdmin = false;
 
 // Initialize Bootstrap modals
 function initModals() {
@@ -51,19 +52,45 @@ function initModals() {
 // Load all courses created by the user
 async function loadUserCourses() {
   try {
-    const { data: courses, error } = await supabase
-      .from('courses')
-      .select(`
-        id, 
-        title, 
-        description, 
-        cover_image_url, 
-        is_published, 
-        created_at,
-        modules:modules (count)
-      `)
-      .eq('created_by', currentUser.id)
-      .order('created_at', { ascending: false });
+    // Check if current user is admin
+    isAdmin = currentUser?.email === 'ugioc@riseup.net';
+    
+    let coursesQuery;
+    
+    if (isAdmin) {
+      // Admin sees all courses with creator info
+      coursesQuery = supabase
+        .from('courses')
+        .select(`
+          id, 
+          title, 
+          description, 
+          cover_image_url, 
+          is_published, 
+          created_at,
+          created_by,
+          creator:profiles!created_by(username, full_name),
+          modules:modules (count)
+        `)
+        .order('created_at', { ascending: false });
+    } else {
+      // Regular users only see their own courses
+      coursesQuery = supabase
+        .from('courses')
+        .select(`
+          id, 
+          title, 
+          description, 
+          cover_image_url, 
+          is_published, 
+          created_at,
+          modules:modules (count)
+        `)
+        .eq('created_by', currentUser.id)
+        .order('created_at', { ascending: false });
+    }
+    
+    const { data: courses, error } = await coursesQuery;
     
     if (error) throw error;
     
@@ -86,10 +113,24 @@ function renderCoursesList() {
   
   noCoursesMessage.classList.add('hidden');
   
+  // Add admin indicator if user is admin
+  if (isAdmin) {
+    const adminAlert = document.createElement('div');
+    adminAlert.className = 'alert alert-info mb-3';
+    adminAlert.innerHTML = '<strong>Admin Mode:</strong> You can view all courses from all creators.';
+    coursesList.parentNode.insertBefore(adminAlert, coursesList);
+  }
+  
   userCourses.forEach(course => {
     const moduleCount = course.modules[0]?.count || 0;
     const col = document.createElement('div');
     col.className = 'col-md-4';
+    
+    // Creator info shown only for admin
+    const creatorInfo = isAdmin && course.creator 
+      ? `<div class="mt-2 text-muted">Creator: ${course.creator.full_name || course.creator.username}</div>` 
+      : '';
+    
     col.innerHTML = `
       <div class="card course-card" data-id="${course.id}">
         <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px; overflow: hidden;">
@@ -107,6 +148,7 @@ function renderCoursesList() {
             </span>
             <span class="text-muted">${moduleCount} module${moduleCount !== 1 ? 's' : ''}</span>
           </div>
+          ${creatorInfo}
         </div>
       </div>
     `;
@@ -147,11 +189,20 @@ async function editCourse(courseId) {
     // Get course details
     const { data: course, error } = await supabase
       .from('courses')
-      .select('*')
+      .select(isAdmin ? '*,creator:profiles!created_by(username)' : '*')
       .eq('id', courseId)
       .single();
     
     if (error) throw error;
+    
+    // For admin, show a notice that they're editing someone else's course
+    const isOwnCourse = course.created_by === currentUser.id;
+    if (isAdmin && !isOwnCourse) {
+      const adminNotice = document.createElement('div');
+      adminNotice.className = 'alert alert-warning mb-3';
+      adminNotice.innerHTML = `<strong>Admin Notice:</strong> You are editing a course created by ${course.creator?.username || 'another user'}.`;
+      document.querySelector('#details-tab').prepend(adminNotice);
+    }
     
     // Populate form
     document.getElementById('edit-course-id').value = course.id;

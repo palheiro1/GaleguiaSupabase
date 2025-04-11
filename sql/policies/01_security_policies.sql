@@ -30,11 +30,18 @@ TO authenticated
 WITH CHECK (auth.uid() = id);
 
 -- Courses Policies
--- Published courses are viewable by all authenticated users
-CREATE POLICY "Published courses are viewable by authenticated users"
+-- Drop the existing courses policy
+DROP POLICY IF EXISTS "Published courses are viewable by authenticated users" ON courses;
+
+-- Create a new policy that includes admin access
+CREATE POLICY "Published courses are viewable by authenticated users or admin"
 ON courses FOR SELECT
 TO authenticated
-USING (is_published = true OR auth.uid() = created_by);
+USING (
+  is_published = true 
+  OR auth.uid() = created_by
+  OR (SELECT email FROM auth.users WHERE id = auth.uid()) = 'ugioc@riseup.net'
+);
 
 -- Course creators can update their own courses
 CREATE POLICY "Course creators can update their own courses"
