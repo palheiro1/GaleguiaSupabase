@@ -215,14 +215,20 @@ async function editCourse(courseId) {
   currentLessonId = null;
   
   try {
-    // Get course details
-    const { data: course, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('id', courseId)
-      .single();
+    // Use the new secure RPC function to get course details
+    const { data: courses, error } = await supabase
+      .rpc('get_course_by_id', { 
+        p_course_id: courseId,
+        p_user_id: currentUser.id
+      });
     
     if (error) throw error;
+    
+    if (!courses || courses.length === 0) {
+      throw new Error("Course not found or you don't have permission to access it");
+    }
+    
+    const course = courses[0];
     
     // For admin, show a notice that they're editing someone else's course
     const isOwnCourse = course.created_by === currentUser.id;
@@ -230,18 +236,14 @@ async function editCourse(courseId) {
       // Get creator info if needed
       let creatorName = 'another user';
       
-      if (!course.creator) {
-        const { data: creatorProfile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', course.created_by)
-          .single();
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', course.created_by)
+        .single();
           
-        if (creatorProfile) {
-          creatorName = creatorProfile.username;
-        }
-      } else {
-        creatorName = course.creator.username || 'another user';
+      if (creatorProfile) {
+        creatorName = creatorProfile.username || creatorProfile.full_name || 'another user';
       }
       
       // Remove any existing admin notices first
@@ -414,29 +416,31 @@ async function deleteCourse() {
 // Load modules for a course
 async function loadCourseModules(courseId) {
   try {
+    // Use the new secure RPC function for modules
     const { data: modules, error } = await supabase
-      .from('modules')
-      .select(`
-        id, 
-        title, 
-        description, 
-        order,
-        lessons:lessons (
-          id,
-          title,
-          type,
-          order
-        )
-      `)
-      .eq('course_id', courseId)
-      .order('order', { ascending: true });
+      .rpc('get_course_modules', {
+        p_course_id: courseId,
+        p_user_id: currentUser.id
+      });
     
     if (error) throw error;
     
-    // Sort lessons within each module
-    modules.forEach(module => {
+    // For each module, get lessons using the new function
+    for (const module of modules) {
+      const { data: lessons, error: lessonError } = await supabase
+        .rpc('get_module_lessons', {
+          p_module_id: module.id,
+          p_user_id: currentUser.id
+        });
+      
+      if (lessonError) throw lessonError;
+      
+      // Attach lessons to module
+      module.lessons = lessons || [];
+      
+      // Sort lessons by order
       module.lessons.sort((a, b) => a.order - b.order);
-    });
+    }
     
     currentCourseModules = modules;
     renderModules(modules);
