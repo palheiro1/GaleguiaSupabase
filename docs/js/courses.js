@@ -303,37 +303,29 @@ async function saveCourse(e) {
     let result;
     
     if (currentCourseId) {
-      // For admins, use the admin_update_course function
-      if (isAdmin) {
-        const { data, error } = await supabase
-          .rpc('admin_update_course', {
-            p_course_id: currentCourseId,
-            p_title: courseTitle,
-            p_description: courseDescription,
-            p_is_published: isPublished,
-            p_admin_id: currentUser.id
-          });
+      // Update existing course - RLS policies will handle permissions for creators and admins
+      const { data, error } = await supabase
+        .from('courses')
+        .update({
+          title: courseTitle,
+          description: courseDescription,
+          is_published: isPublished,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentCourseId)
+        // RLS policies ('Course creators can update own courses' and 'Admins can update any course')
+        // will automatically enforce the correct permissions based on auth.uid() and profiles.is_admin
+        .select()
+        .single();
         
-        if (error) throw error;
-        result = data[0]; // Function returns an array
-      } else {
-        // For regular users, use direct update which uses RLS
-        const { data, error } = await supabase
-          .from('courses')
-          .update({
-            title: courseTitle,
-            description: courseDescription,
-            is_published: isPublished,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentCourseId)
-          .eq('created_by', currentUser.id) // Important: ensure user can only update their own courses
-          .select()
-          .single();
-          
-        if (error) throw error;
-        result = data;
+      if (error) {
+        // Provide more context on permission errors
+        if (error.message.includes('permission denied')) {
+          throw new Error(`Permission denied. You might not be the creator or an admin. Original error: ${error.message}`);
+        }
+        throw error;
       }
+      result = data;
     } else {
       // Create new course - explicitly set created_by
       const courseData = {
