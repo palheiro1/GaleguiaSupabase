@@ -357,13 +357,48 @@ async function saveCourse(e) {
     
     // Handle cover image upload if selected
     if (coverImageFile) {
-      const filePath = `course_covers/${currentCourseId}/${Date.now()}_${coverImageFile.name}`;
+      // Get current course data to check if there's an existing cover image
+      const { data: currentCourse } = await supabase
+        .rpc('get_course_by_id', { 
+          p_course_id: currentCourseId,
+          p_user_id: currentUser.id
+        });
+      
+      // Extract existing image path if it exists
+      let oldImagePath = null;
+      if (currentCourse && currentCourse[0]?.cover_image_url) {
+        const url = currentCourse[0].cover_image_url;
+        // Extract the path from the URL
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/');
+        // Assuming format like /storage/v1/object/course-materials/course_covers/...
+        // We want all parts after 'course-materials/'
+        if (pathParts.length > 5) {
+          oldImagePath = pathParts.slice(5).join('/');
+        }
+      }
+      
+      // Delete old image if it exists
+      if (oldImagePath) {
+        try {
+          await supabase.storage
+            .from('course-materials')
+            .remove([oldImagePath]);
+          console.log("Deleted old image:", oldImagePath);
+        } catch (removeError) {
+          console.warn("Could not delete old image:", removeError);
+          // Continue even if deletion fails
+        }
+      }
+      
+      // Simplified file path for better management
+      const filePath = `course_covers/${currentCourseId}/cover_image.${coverImageFile.name.split('.').pop()}`;
       
       const { error: uploadError } = await supabase.storage
         .from('course-materials')
         .upload(filePath, coverImageFile, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true // Use upsert to overwrite existing file with same name
         });
       
       if (uploadError) throw uploadError;
