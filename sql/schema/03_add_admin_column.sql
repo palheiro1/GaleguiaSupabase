@@ -16,8 +16,21 @@ BEGIN
 END
 $$;
 
--- Set specific email as admin
-UPDATE profiles 
-SET is_admin = true 
-FROM auth.users
-WHERE profiles.id = auth.users.id AND auth.users.email = 'ugioc@riseup.net';
+-- Create a function to set a user as admin (needs to be run as superuser)
+CREATE OR REPLACE FUNCTION admin_set_admin_user(admin_email TEXT)
+RETURNS VOID AS $$
+BEGIN
+  -- This function should be executed with an account that has sufficient privileges
+  UPDATE profiles
+  SET is_admin = true
+  WHERE id IN (
+    SELECT id FROM auth.users WHERE email = admin_email
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Execute the function (this still requires proper permissions)
+SELECT admin_set_admin_user('ugioc@riseup.net');
+
+-- Alternatively, if you know the user ID, you can directly update without joining:
+-- UPDATE profiles SET is_admin = true WHERE id = 'specific-user-id-here';

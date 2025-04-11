@@ -63,68 +63,40 @@ async function loadUserCourses() {
     
     isAdmin = userProfile?.is_admin || false;
     
-    let coursesQuery;
+    console.log("User is admin:", isAdmin); // Debug output
     
-    if (isAdmin) {
-      // Admin sees all courses without the foreign key relationship
-      coursesQuery = supabase
-        .from('courses')
-        .select(`
-          id, 
-          title, 
-          description, 
-          cover_image_url, 
-          is_published, 
-          created_at,
-          created_by,
-          modules:modules (count)
-        `)
-        .order('created_at', { ascending: false });
-    } else {
-      // Regular users only see their own courses
-      coursesQuery = supabase
-        .from('courses')
-        .select(`
-          id, 
-          title, 
-          description, 
-          cover_image_url, 
-          is_published, 
-          created_at,
-          modules:modules (count)
-        `)
-        .eq('created_by', currentUser.id)
-        .order('created_at', { ascending: false });
-    }
-    
-    const { data: courses, error } = await coursesQuery;
+    // Use a simpler query first to test if it works
+    let { data: courses, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    // If admin, fetch creator information separately
-    if (isAdmin && courses.length > 0) {
-      // Get unique creator IDs
-      const creatorIds = [...new Set(courses.map(course => course.created_by))];
-      
-      // Fetch profiles for these creators
-      const { data: creators, error: creatorsError } = await supabase
-        .from('profiles')
-        .select('id, username, full_name')
-        .in('id', creatorIds);
-      
-      if (creatorsError) throw creatorsError;
-      
-      // Create a map of creator info
-      const creatorsMap = {};
-      creators.forEach(creator => {
-        creatorsMap[creator.id] = creator;
-      });
-      
-      // Add creator info to each course
-      courses.forEach(course => {
-        course.creator = creatorsMap[course.created_by] || null;
-      });
+    // Filter courses if not admin
+    if (!isAdmin) {
+      courses = courses.filter(course => course.created_by === currentUser.id);
     }
+    
+    // Then get module counts separately
+    const { data: modulesCounts, error: modulesError } = await supabase
+      .from('modules')
+      .select('course_id')
+      .eq('course_id', courses.map(c => c.id));
+      
+    if (modulesError) throw modulesError;
+    
+    // Count modules per course
+    const moduleCountByCourse = {};
+    modulesCounts.forEach(m => {
+      moduleCountByCourse[m.course_id] = (moduleCountByCourse[m.course_id] || 0) + 1;
+    });
+    
+    // Add module counts to courses
+    courses.forEach(course => {
+      course.moduleCount = moduleCountByCourse[course.id] || 0;
+      course.modules = [{ count: moduleCountByCourse[course.id] || 0 }];
+    });
     
     userCourses = courses;
     renderCoursesList();

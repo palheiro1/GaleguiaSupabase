@@ -93,6 +93,37 @@ ON courses FOR DELETE
 TO authenticated
 USING (auth.uid() = created_by);
 
+-- Add a new policy allowing admins to update any course
+CREATE POLICY "Admins can update any course"
+ON courses FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
+  )
+);
+
+-- Add a new policy allowing admins to delete any course
+CREATE POLICY "Admins can delete any course"
+ON courses FOR DELETE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
+  )
+);
+
 -- Modules Policies
 -- Modules are viewable if their parent course is viewable
 CREATE POLICY "Modules are viewable if their course is viewable"
