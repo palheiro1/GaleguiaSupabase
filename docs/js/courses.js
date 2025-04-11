@@ -76,10 +76,10 @@ async function loadUserCourses() {
     let coursesQuery;
     
     // For both admins and regular users, just get courses they have access to
-    // The RLS policies will handle the filtering
+    // Explicitly define which columns to fetch to avoid auth.users references
     coursesQuery = await supabase
       .from('courses')
-      .select('*')
+      .select('id, title, description, cover_image_url, is_published, created_at, created_by, updated_at')
       .order('created_at', { ascending: false });
     
     const { data: courses, error } = coursesQuery;

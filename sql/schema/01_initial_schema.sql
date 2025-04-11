@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS courses (
     title TEXT NOT NULL,
     description TEXT,
     cover_image_url TEXT,
-    created_by UUID REFERENCES auth.users(id) NOT NULL,
+    created_by UUID NOT NULL, -- Remove direct reference to auth.users
     is_published BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
