@@ -4,7 +4,9 @@
   "description": "Educational platform built with Supabase",
   "scripts": {
     "start": "http-server",
-    "deploy": "cp -r web-admin/* public/"
+    "deploy": "node sync-folders.js",
+    "sync": "node sync-folders.js",
+    "build": "node sync-folders.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8"
