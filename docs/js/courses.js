@@ -301,6 +301,7 @@ async function saveCourse(e) {
   
   try {
     let result;
+    const isNewCourse = !currentCourseId; // Track if we are creating a new course *before* potentially assigning currentCourseId
     
     if (currentCourseId) {
       // Update existing course - RLS policies will handle permissions for creators and admins
@@ -394,13 +395,16 @@ async function saveCourse(e) {
       // Simplified file path for better management
       const filePath = `course_covers/${currentCourseId}/cover_image.${coverImageFile.name.split('.').pop()}`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('course-materials')
-        .upload(filePath, coverImageFile, {
-          cacheControl: '3600',
-          upsert: true // Use upsert to overwrite existing file with same name
-        });
-      
+       // Determine upsert option based on whether it's a new course or update
+       const upsertOption = !isNewCourse; // Use upsert: true ONLY for updates, false for initial creation
+ 
+       const { error: uploadError } = await supabase.storage
+         .from('course-materials')
+         .upload(filePath, coverImageFile, {
+           cacheControl: '3600',
+           upsert: upsertOption 
+         });
+       
       if (uploadError) throw uploadError;
       
       // Get the public URL
@@ -438,8 +442,30 @@ async function saveCourse(e) {
     loadUserCourses();
     
   } catch (error) {
-    console.error('Error saving course:', error.message);
-    showErrorAlert('Error saving course: ' + error.message);
+    // Refined error logging
+    console.error('Detailed error during saveCourse:', error); 
+    
+    let userMessage = 'An unexpected error occurred while saving the course.';
+    
+    // Attempt to identify the type of error more reliably
+    if (error && typeof error === 'object') {
+         // Check if it looks like a Supabase Storage error
+         if (error.name === 'StorageApiError' || (error.message && (error.message.toLowerCase().includes('storage') || error.message.toLowerCase().includes('upload') || error.status === 400))) { // Added status check for 400
+              userMessage = `Storage Error (${error.status || 'unknown'}): ${error.message || 'Failed to upload image.'}`;
+         // Check if it looks like a Supabase PostgREST error (database)
+         } else if (error.code || (error.message && (error.message.toLowerCase().includes('permission') || error.message.toLowerCase().includes('constraint') || error.message.toLowerCase().includes('foreign key') || error.message.toLowerCase().includes('rpc')))) { // Added RPC check
+              userMessage = `Database Error: ${error.message || 'Failed to save course data.'}`;
+        // Fallback for other Error objects
+        } else if (error.message) {
+             userMessage = `Error: ${error.message}`;
+        }
+    } else if (typeof error === 'string') {
+       // Handle plain string errors
+       userMessage = 'Error saving course: ' + error;
+    }
+    
+    console.error('User-facing error message:', userMessage);
+    showErrorAlert(userMessage);
   }
 }
 
