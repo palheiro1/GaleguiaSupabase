@@ -11,9 +11,19 @@
 -- 1. Create storage buckets
 -- You'll need to create these buckets in the Supabase Dashboard:
 -- - 'avatars' - for user profile pictures
--- - 'course_materials' - for course-related files (images, videos, etc.)
+-- - 'course-materials' - for course-related files (images, videos, etc.)
 
--- 2. Set up RLS policies for the storage buckets
+-- 2. First drop existing policies if they exist
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Course materials are viewable by authenticated users" ON storage.objects;
+DROP POLICY IF EXISTS "Course creators can upload course materials" ON storage.objects;
+DROP POLICY IF EXISTS "Course creators can update course materials" ON storage.objects;
+DROP POLICY IF EXISTS "Course creators can delete course materials" ON storage.objects;
+
+-- 3. Create new policies
 
 -- Avatars bucket policies
 -- Allow users to view their own and others' avatars (public)
@@ -57,14 +67,14 @@ USING (
 CREATE POLICY "Course materials are viewable by authenticated users"
 ON storage.objects FOR SELECT
 TO authenticated
-USING (bucket_id = 'course_materials');
+USING (bucket_id = 'course-materials');
 
 -- Allow course creators to upload course materials
 CREATE POLICY "Course creators can upload course materials"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
-  bucket_id = 'course_materials' AND
+  bucket_id = 'course-materials' AND
   EXISTS (
     SELECT 1 FROM courses
     WHERE courses.id::text = (storage.foldername(name))[2] -- Assuming path is course_covers/{courseId}/...
@@ -77,7 +87,7 @@ CREATE POLICY "Course creators can update course materials"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (
-  bucket_id = 'course_materials' AND
+  bucket_id = 'course-materials' AND
   EXISTS (
     SELECT 1 FROM courses
     WHERE courses.id::text = (storage.foldername(name))[2] -- Assuming path is course_covers/{courseId}/...
@@ -85,7 +95,7 @@ USING (
   )
 )
 WITH CHECK (
-  bucket_id = 'course_materials' AND
+  bucket_id = 'course-materials' AND
   EXISTS (
     SELECT 1 FROM courses
     WHERE courses.id::text = (storage.foldername(name))[2] -- Assuming path is course_covers/{courseId}/...
@@ -98,7 +108,7 @@ CREATE POLICY "Course creators can delete course materials"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
-  bucket_id = 'course_materials' AND
+  bucket_id = 'course-materials' AND
   EXISTS (
     SELECT 1 FROM courses
     WHERE courses.id::text = (storage.foldername(name))[2] -- Assuming path is course_covers/{courseId}/...

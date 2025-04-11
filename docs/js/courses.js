@@ -235,7 +235,7 @@ async function saveCourse(e) {
       const filePath = `course_covers/${currentCourseId}/${Date.now()}_${coverImageFile.name}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('course_materials')
+        .from('course-materials')
         .upload(filePath, coverImageFile, {
           cacheControl: '3600',
           upsert: true
@@ -245,7 +245,7 @@ async function saveCourse(e) {
       
       // Get the public URL
       const { data } = supabase.storage
-        .from('course_materials')
+        .from('course-materials')
         .getPublicUrl(filePath);
       
       // Update course with cover image URL
@@ -635,7 +635,7 @@ async function saveLesson() {
       const filePath = `courses/${currentCourseId}/modules/${moduleId}/lessons/${result.id}/${Date.now()}_${videoFile.name}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('course_materials')
+        .from('course-materials')
         .upload(filePath, videoFile, {
           cacheControl: '3600',
           upsert: true
@@ -645,7 +645,7 @@ async function saveLesson() {
       
       // Get the public URL
       const { data } = supabase.storage
-        .from('course_materials')
+        .from('course-materials')
         .getPublicUrl(filePath);
       
       // Update lesson with video URL

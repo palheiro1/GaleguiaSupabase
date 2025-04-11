@@ -290,7 +290,7 @@ export async function uploadCourseCoverImage(courseId, file) {
     // Upload the file to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase
       .storage
-      .from('course_materials')
+      .from('course-materials') // Changed from course_materials to course-materials
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -301,7 +301,7 @@ export async function uploadCourseCoverImage(courseId, file) {
     // Get the public URL
     const { data: { publicUrl } } = supabase
       .storage
-      .from('course_materials')
+      .from('course-materials') // Changed from course_materials to course-materials
       .getPublicUrl(filePath)
     
     // Update the course with the new cover image URL
@@ -351,7 +351,7 @@ export async function uploadLessonVideo(lessonId, file) {
     // Upload the file to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase
       .storage
-      .from('course_materials')
+      .from('course-materials') // Changed from course_materials to course-materials
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -362,7 +362,7 @@ export async function uploadLessonVideo(lessonId, file) {
     // Get the public URL
     const { data: { publicUrl } } = supabase
       .storage
-      .from('course_materials')
+      .from('course-materials') // Changed from course_materials to course-materials
       .getPublicUrl(filePath)
     
     // Update the lesson with the new video URL
