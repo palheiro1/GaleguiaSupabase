@@ -72,17 +72,9 @@ async function loadUserCourses() {
     
     console.log("User is admin:", isAdmin);
     
-    // Now we'll use a simpler approach to get courses
-    let coursesQuery;
-    
-    // For both admins and regular users, just get courses they have access to
-    // Explicitly define which columns to fetch to avoid auth.users references
-    coursesQuery = await supabase
-      .from('courses')
-      .select('id, title, description, cover_image_url, is_published, created_at, created_by, updated_at')
-      .order('created_at', { ascending: false });
-    
-    const { data: courses, error } = coursesQuery;
+    // Use the secure RPC function instead of directly querying courses
+    const { data: courses, error } = await supabase
+      .rpc('get_user_accessible_courses', { p_user_id: userID });
     
     if (error) throw error;
     
@@ -107,8 +99,8 @@ async function loadUserCourses() {
       });
       
       // For admin users, also get the creator information
-      if (isAdmin) {
-        const creatorIds = [...new Set(courses.map(c => c.created_by))];
+      if (isAdmin && courses.length > 0) {
+        const creatorIds = [...new Set(courses.map(c => c.created_by))].filter(Boolean);
         
         if (creatorIds.length > 0) {
           const { data: creators } = await supabase
@@ -122,7 +114,9 @@ async function loadUserCourses() {
           });
           
           courses.forEach(course => {
-            course.creator = creatorMap[course.created_by];
+            if (course.created_by && creatorMap[course.created_by]) {
+              course.creator = creatorMap[course.created_by];
+            }
           });
         }
       }
@@ -312,12 +306,12 @@ async function saveCourse(e) {
     let result;
     
     if (currentCourseId) {
-      // Update existing course
+      // Update existing course - use update with minimal fields
       const { data, error } = await supabase
         .from('courses')
         .update(courseData)
         .eq('id', currentCourseId)
-        .select()
+        .select('id, title, description, cover_image_url, is_published, created_at, updated_at')
         .single();
       
       if (error) throw error;
@@ -330,7 +324,7 @@ async function saveCourse(e) {
       const { data, error } = await supabase
         .from('courses')
         .insert([courseData])
-        .select()
+        .select('id, title, description, cover_image_url, is_published, created_at, updated_at')
         .single();
       
       if (error) throw error;
