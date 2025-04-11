@@ -52,8 +52,16 @@ function initModals() {
 // Load all courses created by the user
 async function loadUserCourses() {
   try {
-    // Check if current user is admin
-    isAdmin = currentUser?.email === 'ugioc@riseup.net';
+    // Check if current user has admin privileges
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', currentUser.id)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    isAdmin = userProfile?.is_admin || false;
     
     let coursesQuery;
     

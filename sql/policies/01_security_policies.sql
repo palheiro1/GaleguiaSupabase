@@ -50,14 +50,28 @@ TO authenticated
 WITH CHECK (auth.uid() = id);
 
 -- Courses Policies
--- Create policy that includes admin access
-CREATE POLICY "Published courses are viewable by authenticated users or admin"
+-- Drop the problematic policy
+DROP POLICY IF EXISTS "Published courses are viewable by authenticated users or admin" ON courses;
+
+-- Replace with a simpler policy that doesn't try to access auth.users
+CREATE POLICY "Published courses are viewable by authenticated users"
 ON courses FOR SELECT
 TO authenticated
 USING (
   is_published = true 
   OR auth.uid() = created_by
-  OR (SELECT email FROM auth.users WHERE id = auth.uid()) = 'ugioc@riseup.net'
+);
+
+-- Add a new policy for admin users that must be updated by a database function
+CREATE POLICY "Admin users can view all courses"
+ON courses FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
+  )
 );
 
 -- Course creators can update their own courses

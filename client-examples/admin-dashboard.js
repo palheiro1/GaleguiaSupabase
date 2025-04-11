@@ -8,7 +8,20 @@ export async function isCurrentUserAdmin() {
     
     if (error) throw error
     
-    return user?.email === 'ugioc@riseup.net'
+    // Check the is_admin flag in profiles
+    if (user) {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+      
+      if (profileError) throw profileError
+      
+      return data?.is_admin || false
+    }
+    
+    return false
   } catch (error) {
     console.error('Error checking admin status:', error.message)
     return false
