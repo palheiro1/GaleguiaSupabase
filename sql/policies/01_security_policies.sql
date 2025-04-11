@@ -1,7 +1,7 @@
 -- Galeguia Security Policies
 -- IMPORTANT: Execute this in your Supabase SQL Editor after creating the tables
 
--- Enable Row Level Security on all tables
+-- Enable Row Level Security on all tables (if not already enabled)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
@@ -9,15 +9,15 @@ ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies to avoid conflicts
+-- Drop existing policies to avoid conflicts (Corrected Names)
 DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their own profiles" ON profiles;
 DROP POLICY IF EXISTS "Published courses are viewable by authenticated users" ON courses;
 DROP POLICY IF EXISTS "Admin users can view all courses" ON courses;
-DROP POLICY IF EXISTS "Course creators can update their own courses" ON courses;
-DROP POLICY IF EXISTS "Authenticated users can create courses" ON courses;
-DROP POLICY IF EXISTS "Course creators can delete their own courses" ON courses;
+DROP POLICY IF EXISTS "Course creators can update own courses" ON courses; 
+DROP POLICY IF EXISTS "Users can create courses" ON courses; 
+DROP POLICY IF EXISTS "Course creators can delete own courses" ON courses; 
 DROP POLICY IF EXISTS "Admins can update any course" ON courses;
 DROP POLICY IF EXISTS "Admins can delete any course" ON courses;
 DROP POLICY IF EXISTS "Modules are viewable if their course is viewable" ON modules;
@@ -28,7 +28,7 @@ DROP POLICY IF EXISTS "Users can view their own enrollments" ON enrollments;
 DROP POLICY IF EXISTS "Users can enroll themselves in published courses" ON enrollments;
 DROP POLICY IF EXISTS "Users can delete their own enrollments" ON enrollments;
 DROP POLICY IF EXISTS "Users can view their own progress" ON progress;
-DROP POLICY IF EXISTS "Users can insert their own progress if enrolled" ON progress;
+DROP POLICY IF EXISTS "Users can insert their own progress if enrolled" ON progress; -- Name matches CREATE below
 DROP POLICY IF EXISTS "Users can update their own progress" ON progress;
 
 -- Profiles Policies
@@ -50,6 +50,16 @@ CREATE POLICY "Users can insert their own profiles"
 ON profiles FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = id);
+
+-- Grant reference permission for foreign key checks (safe to run multiple times)
+GRANT REFERENCES (id) ON public.profiles TO authenticated;
+-- Also grant SELECT on the referenced column for FK checks during INSERT/UPDATE with RLS
+GRANT SELECT (id) ON public.profiles TO authenticated;
+
+-- Grant SELECT on auth.users.id for RLS checks using auth.uid() (safe as IDs are not sensitive)
+GRANT SELECT (id) ON auth.users TO authenticated;
+-- Also grant REFERENCES on auth.users.id for FK checks involving profiles.id
+GRANT REFERENCES (id) ON auth.users TO authenticated;
 
 -- Courses Policies
 -- Courses are viewable if published or if user is creator

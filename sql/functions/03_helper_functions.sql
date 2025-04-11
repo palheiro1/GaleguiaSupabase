@@ -118,3 +118,34 @@ BEGIN
   LIMIT 1;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to securely create a course
+CREATE OR REPLACE FUNCTION create_course_secure(
+  p_title TEXT, 
+  p_description TEXT, 
+  p_is_published BOOLEAN, 
+  p_creator_id UUID
+)
+RETURNS TABLE (
+  id UUID,
+  title TEXT,
+  description TEXT,
+  cover_image_url TEXT,
+  created_by UUID,
+  is_published BOOLEAN,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  -- Ensure the creator_id matches the currently authenticated user
+  IF auth.uid() != p_creator_id THEN
+    RAISE EXCEPTION 'User ID mismatch. Cannot create course for another user.';
+  END IF;
+
+  -- Perform the insert
+  RETURN QUERY
+  INSERT INTO public.courses (title, description, is_published, created_by)
+  VALUES (p_title, p_description, p_is_published, p_creator_id)
+  RETURNING courses.id, courses.title, courses.description, courses.cover_image_url, courses.created_by, courses.is_published, courses.created_at, courses.updated_at;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

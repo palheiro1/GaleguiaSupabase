@@ -327,23 +327,31 @@ async function saveCourse(e) {
       }
       result = data;
     } else {
-      // Create new course - explicitly set created_by
-      const courseData = {
-        title: courseTitle,
-        description: courseDescription,
-        is_published: isPublished,
-        created_by: currentUser.id,
-        updated_at: new Date().toISOString()
-      };
-      
+      // Create new course using the secure RPC function
       const { data, error } = await supabase
-        .from('courses')
-        .insert([courseData])
-        .select()
-        .single();
+        .rpc('create_course_secure', { 
+          p_title: courseTitle, 
+          p_description: courseDescription, 
+          p_is_published: isPublished, 
+          p_creator_id: currentUser.id 
+        });
+
+      if (error) {
+        // Provide more context on permission errors
+        if (error.message.includes('permission denied')) {
+          throw new Error(`Permission denied during course creation RPC. Original error: ${error.message}`);
+        }
+         if (error.message.includes('User ID mismatch')) {
+          throw new Error(`Security check failed: ${error.message}`);
+        }
+        throw error;
+      }
       
-      if (error) throw error;
-      result = data;
+      // The RPC returns an array containing the new row
+      if (!data || data.length === 0) {
+        throw new Error('Course creation RPC did not return the new course data.');
+      }
+      result = data[0]; 
       currentCourseId = result.id;
     }
     
