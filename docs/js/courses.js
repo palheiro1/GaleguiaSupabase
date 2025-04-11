@@ -82,24 +82,23 @@ async function loadUserCourses() {
     const courseIds = courses.map(c => c.id);
     
     if (courseIds.length > 0) {
-      // Use the secure RPC function for modules instead of direct query
-      const { data: modules, error: modulesError } = await supabase
-        .rpc('get_all_modules_for_courses', { p_course_ids: courseIds });
+      // Use the secure one-by-one approach to avoid large arrays
+      const moduleCounts = {};
       
-      if (modulesError) {
-        console.error('Error fetching modules:', modulesError);
-      } else {
-        // Count modules per course
-        const moduleCounts = {};
-        modules?.forEach(module => {
-          moduleCounts[module.course_id] = (moduleCounts[module.course_id] || 0) + 1;
-        });
+      // Process each course individually to avoid large IN clauses
+      for (const courseId of courseIds) {
+        const { data: courseModules, error: moduleError } = await supabase
+          .rpc('get_modules_by_course_id', { p_course_id: courseId });
         
-        // Add module counts to each course
-        courses.forEach(course => {
-          course.modules = [{ count: moduleCounts[course.id] || 0 }];
-        });
+        if (!moduleError && courseModules) {
+          moduleCounts[courseId] = courseModules.length;
+        }
       }
+      
+      // Add module counts to each course
+      courses.forEach(course => {
+        course.modules = [{ count: moduleCounts[course.id] || 0 }];
+      });
       
       // For admin users, also get the creator information
       if (isAdmin && courses.length > 0) {
@@ -304,19 +303,37 @@ async function saveCourse(e) {
     let result;
     
     if (currentCourseId) {
-      // Update existing course using the RPC function
-      const { data, error } = await supabase
-        .rpc('update_course', {
-          p_course_id: currentCourseId,
-          p_user_id: currentUser.id,
-          p_title: courseTitle,
-          p_description: courseDescription,
-          p_is_published: isPublished
-        });
-      
-      if (error) throw error;
-      result = data[0]; // Function returns an array
-      
+      // For admins, use the admin_update_course function
+      if (isAdmin) {
+        const { data, error } = await supabase
+          .rpc('admin_update_course', {
+            p_course_id: currentCourseId,
+            p_title: courseTitle,
+            p_description: courseDescription,
+            p_is_published: isPublished,
+            p_admin_id: currentUser.id
+          });
+        
+        if (error) throw error;
+        result = data[0]; // Function returns an array
+      } else {
+        // For regular users, use direct update which uses RLS
+        const { data, error } = await supabase
+          .from('courses')
+          .update({
+            title: courseTitle,
+            description: courseDescription,
+            is_published: isPublished,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentCourseId)
+          .eq('created_by', currentUser.id) // Important: ensure user can only update their own courses
+          .select()
+          .single();
+          
+        if (error) throw error;
+        result = data;
+      }
     } else {
       // Create new course - explicitly set created_by
       const courseData = {
@@ -330,7 +347,7 @@ async function saveCourse(e) {
       const { data, error } = await supabase
         .from('courses')
         .insert([courseData])
-        .select('id, title, description, cover_image_url, is_published, created_at, updated_at')
+        .select()
         .single();
       
       if (error) throw error;
