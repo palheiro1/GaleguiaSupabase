@@ -82,21 +82,24 @@ async function loadUserCourses() {
     const courseIds = courses.map(c => c.id);
     
     if (courseIds.length > 0) {
-      const { data: modules } = await supabase
-        .from('modules')
-        .select('course_id, id')
-        .in('course_id', courseIds);
+      // Use the secure RPC function for modules instead of direct query
+      const { data: modules, error: modulesError } = await supabase
+        .rpc('get_all_modules_for_courses', { p_course_ids: courseIds });
       
-      // Count modules per course
-      const moduleCounts = {};
-      modules?.forEach(module => {
-        moduleCounts[module.course_id] = (moduleCounts[module.course_id] || 0) + 1;
-      });
-      
-      // Add module counts to each course
-      courses.forEach(course => {
-        course.modules = [{ count: moduleCounts[course.id] || 0 }];
-      });
+      if (modulesError) {
+        console.error('Error fetching modules:', modulesError);
+      } else {
+        // Count modules per course
+        const moduleCounts = {};
+        modules?.forEach(module => {
+          moduleCounts[module.course_id] = (moduleCounts[module.course_id] || 0) + 1;
+        });
+        
+        // Add module counts to each course
+        courses.forEach(course => {
+          course.modules = [{ count: moduleCounts[course.id] || 0 }];
+        });
+      }
       
       // For admin users, also get the creator information
       if (isAdmin && courses.length > 0) {
@@ -298,30 +301,31 @@ async function saveCourse(e) {
   const coverImageFile = document.getElementById('course-cover-image').files[0];
   
   try {
-    let courseData = {
-      title: courseTitle,
-      description: courseDescription,
-      is_published: isPublished,
-      updated_at: new Date().toISOString()
-    };
-    
     let result;
     
     if (currentCourseId) {
-      // Update existing course - use update with minimal fields
+      // Update existing course using the RPC function
       const { data, error } = await supabase
-        .from('courses')
-        .update(courseData)
-        .eq('id', currentCourseId)
-        .select('id, title, description, cover_image_url, is_published, created_at, updated_at')
-        .single();
+        .rpc('update_course', {
+          p_course_id: currentCourseId,
+          p_user_id: currentUser.id,
+          p_title: courseTitle,
+          p_description: courseDescription,
+          p_is_published: isPublished
+        });
       
       if (error) throw error;
-      result = data;
+      result = data[0]; // Function returns an array
       
     } else {
       // Create new course - explicitly set created_by
-      courseData.created_by = currentUser.id;
+      const courseData = {
+        title: courseTitle,
+        description: courseDescription,
+        is_published: isPublished,
+        created_by: currentUser.id,
+        updated_at: new Date().toISOString()
+      };
       
       const { data, error } = await supabase
         .from('courses')
