@@ -9,6 +9,26 @@ ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profiles" ON profiles;
+DROP POLICY IF EXISTS "Published courses are viewable by authenticated users" ON courses;
+DROP POLICY IF EXISTS "Published courses are viewable by authenticated users or admin" ON courses;
+DROP POLICY IF EXISTS "Course creators can update their own courses" ON courses;
+DROP POLICY IF EXISTS "Authenticated users can create courses" ON courses;
+DROP POLICY IF EXISTS "Course creators can delete their own courses" ON courses;
+DROP POLICY IF EXISTS "Modules are viewable if their course is viewable" ON modules;
+DROP POLICY IF EXISTS "Course creators can manage their modules" ON modules;
+DROP POLICY IF EXISTS "Lessons are viewable if their module is viewable" ON lessons;
+DROP POLICY IF EXISTS "Course creators can manage their lessons" ON lessons;
+DROP POLICY IF EXISTS "Users can view their own enrollments" ON enrollments;
+DROP POLICY IF EXISTS "Users can enroll themselves in published courses" ON enrollments;
+DROP POLICY IF EXISTS "Users can delete their own enrollments" ON enrollments;
+DROP POLICY IF EXISTS "Users can view their own progress" ON progress;
+DROP POLICY IF EXISTS "Users can insert their own progress if enrolled" ON progress;
+DROP POLICY IF EXISTS "Users can update their own progress" ON progress;
+
 -- Profiles Policies
 -- Any authenticated user can view all profiles
 CREATE POLICY "Profiles are viewable by authenticated users"
@@ -30,10 +50,7 @@ TO authenticated
 WITH CHECK (auth.uid() = id);
 
 -- Courses Policies
--- Drop the existing courses policy
-DROP POLICY IF EXISTS "Published courses are viewable by authenticated users" ON courses;
-
--- Create a new policy that includes admin access
+-- Create policy that includes admin access
 CREATE POLICY "Published courses are viewable by authenticated users or admin"
 ON courses FOR SELECT
 TO authenticated

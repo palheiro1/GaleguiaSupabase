@@ -58,7 +58,7 @@ async function loadUserCourses() {
     let coursesQuery;
     
     if (isAdmin) {
-      // Admin sees all courses with creator info
+      // Admin sees all courses without the foreign key relationship
       coursesQuery = supabase
         .from('courses')
         .select(`
@@ -69,7 +69,6 @@ async function loadUserCourses() {
           is_published, 
           created_at,
           created_by,
-          creator:profiles!created_by(username, full_name),
           modules:modules (count)
         `)
         .order('created_at', { ascending: false });
@@ -93,6 +92,31 @@ async function loadUserCourses() {
     const { data: courses, error } = await coursesQuery;
     
     if (error) throw error;
+    
+    // If admin, fetch creator information separately
+    if (isAdmin && courses.length > 0) {
+      // Get unique creator IDs
+      const creatorIds = [...new Set(courses.map(course => course.created_by))];
+      
+      // Fetch profiles for these creators
+      const { data: creators, error: creatorsError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', creatorIds);
+      
+      if (creatorsError) throw creatorsError;
+      
+      // Create a map of creator info
+      const creatorsMap = {};
+      creators.forEach(creator => {
+        creatorsMap[creator.id] = creator;
+      });
+      
+      // Add creator info to each course
+      courses.forEach(course => {
+        course.creator = creatorsMap[course.created_by] || null;
+      });
+    }
     
     userCourses = courses;
     renderCoursesList();
@@ -189,7 +213,7 @@ async function editCourse(courseId) {
     // Get course details
     const { data: course, error } = await supabase
       .from('courses')
-      .select(isAdmin ? '*,creator:profiles!created_by(username)' : '*')
+      .select('*')
       .eq('id', courseId)
       .single();
     
@@ -198,9 +222,31 @@ async function editCourse(courseId) {
     // For admin, show a notice that they're editing someone else's course
     const isOwnCourse = course.created_by === currentUser.id;
     if (isAdmin && !isOwnCourse) {
+      // Get creator info if needed
+      let creatorName = 'another user';
+      
+      if (!course.creator) {
+        const { data: creatorProfile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', course.created_by)
+          .single();
+          
+        if (creatorProfile) {
+          creatorName = creatorProfile.username;
+        }
+      } else {
+        creatorName = course.creator.username || 'another user';
+      }
+      
+      // Remove any existing admin notices first
+      const existingNotices = document.querySelectorAll('#details-tab .alert-warning');
+      existingNotices.forEach(notice => notice.remove());
+      
+      // Add the admin notice
       const adminNotice = document.createElement('div');
       adminNotice.className = 'alert alert-warning mb-3';
-      adminNotice.innerHTML = `<strong>Admin Notice:</strong> You are editing a course created by ${course.creator?.username || 'another user'}.`;
+      adminNotice.innerHTML = `<strong>Admin Notice:</strong> You are editing a course created by ${creatorName}.`;
       document.querySelector('#details-tab').prepend(adminNotice);
     }
     
